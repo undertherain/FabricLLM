@@ -90,7 +90,9 @@ chat = [
 # formatted_prompt = apply_prompt_template(
 #     raw_prompt, model_name, system_prompt=system_message
 # )
-formatted_prompt = tokenizer.apply_chat_template(chat, tokenize=False)
+formatted_prompt = tokenizer.apply_chat_template(
+    chat, tokenize=False, add_generation_prompt=True
+)
 print(f"Formatted Prompt for LLM: '{formatted_prompt}'")
 
 # 5. Tokenize the input prompt
@@ -119,7 +121,7 @@ print("Text generation complete.")
 # 7. Decode the output tokens back into text
 # We get the first (and only) generated sequence [0]
 # skip_special_tokens=True removes special tokens like PAD or EOS from the output string.
-generated_text = tokenizer.decode(output_sequences[0], skip_special_tokens=True)
+generated_text = tokenizer.decode(output_sequences[0], skip_special_tokens=False)
 
 # 8. Print the generated text
 print("\n--- Generated Text ---")
