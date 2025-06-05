@@ -1,19 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
-import torch  # transformers relies on a backend framework like torch
-
-# Import the necessary classes from the transformers library
-from transformers import (
+import torch
+from transformers import (  # Still needed for apply_prompt_template or direct use if any
     AutoModelForCausalLM,
     AutoTokenizer,
-    GenerationMixin,
-    PretrainedConfig,
-    PreTrainedModel,
 )
+
+from proxy_model import ProxyModel  # Import the ProxyModel from the new file
 
 # 1. Choose a small pre-trained model
 # 'gpt2' is a good small model for demonstration purposes.
@@ -21,62 +15,12 @@ from transformers import (
 # model_name = "gpt2"
 model_name = "Qwen/Qwen3-0.6B"  # This will be the actual model loaded by ProxyModel
 
-
-# --- ProxyModel Definition ---
-class ProxyModel(GenerationMixin):
-    def __init__(self, actual_model_name_or_path):
-        # First, load the configuration of the actual model
-        # config = PretrainedConfig.from_pretrained(actual_model_name_or_path, **kwargs)
-
-        # Initialize the PreTrainedModel (parent class) with this configuration
-        # This MUST be called before assigning any nn.Module attributes (like self.real_model)
-        # super().__init__(config)
-
-        # Now, load the actual model
-        # We can pass the config we already loaded to potentially speed things up or ensure consistency
-        self.real_model = AutoModelForCausalLM.from_pretrained(
-            actual_model_name_or_path
-        )
-        # TODO: get access to this without loading weights of the actual model
-        self.generation_config = self.real_model.generation_config
-        self.generation_config.disable_compile = True
-        self.config = self.real_model.config
-        self.main_input_name = self.real_model.main_input_name
-        self._supports_cache_class = self.real_model._supports_cache_class
-        self.device = self.real_model.device
-        # Ensure the ProxyModel itself knows its main input name, typically from the real model's config or the model itself
-        # PreTrainedModel's __init__ might set this from config, but good to be explicit if needed.
-        # If real_model has main_input_name, it's more direct.
-
-    def can_generate(self):
-        return True
-
-    def forward(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
-        # Delegate the forward pass to the real model
-        # Pass through all relevant arguments
-        return self.real_model.forward(
-            input_ids=input_ids, attention_mask=attention_mask, labels=labels, **kwargs
-        )
-
-    def __call__(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
-        # Delegate the forward pass to the real model
-        # Pass through all relevant arguments
-        return self.real_model.forward(
-            input_ids=input_ids, attention_mask=attention_mask, labels=labels, **kwargs
-        )
-
-    # The .generate() method is inherited from PreTrainedModel (via GenerationMixin)
-    # and will use the above `forward` method.
-
-
-# --- End ProxyModel Definition ---
+# ProxyModel definition is now in proxy_model.py
 
 print(f"Loading tokenizer for '{model_name}'...")
 # 2. Load the tokenizer
 # The tokenizer is responsible for converting text into token IDs that the model understands.
-tokenizer = AutoTokenizer.from_pretrained(
-    model_name
-)  # Tokenizer corresponds to the actual model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 print(f"Instantiating ProxyModel with actual model '{model_name}'...")
 # 3. Load the model (using ProxyModel)
@@ -132,15 +76,21 @@ if tokenizer.pad_token_id is None:
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
 # 4. Define your input prompt
-raw_prompt = "What is the capital of France?"
-print(f"\nRaw Input Prompt: '{raw_prompt}'")
+# raw_prompt = "What is the capital of France?"
+# print(f"\nRaw Input Prompt: '{raw_prompt}'")
 
 # Apply the template
 # You can customize the system_prompt here if needed for a specific run
-system_message = "You are a helpful assistant."
-formatted_prompt = apply_prompt_template(
-    raw_prompt, model_name, system_prompt=system_message
-)
+chat = [
+    {"role": "system", "content": "You are a helpful assistant"},
+    {"role": "user", "content": "What is the capital of France?"},
+    # {"role": "assistant", "content": "I'm doing great. How can I help you today?"},
+]
+
+# formatted_prompt = apply_prompt_template(
+#     raw_prompt, model_name, system_prompt=system_message
+# )
+formatted_prompt = tokenizer.apply_chat_template(chat, tokenize=False)
 print(f"Formatted Prompt for LLM: '{formatted_prompt}'")
 
 # 5. Tokenize the input prompt
