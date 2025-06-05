@@ -158,7 +158,7 @@ print(f"Tokenized Input IDs: {input_ids}")
 print("\nGenerating text...")
 output_sequences = model.generate(
     input_ids=input_ids,
-    max_length=len(input_ids[0]) + 200,  # Generate prompt length + 30 new tokens
+    max_length=len(input_ids[0]) + 256,  # Generate prompt length + 30 new tokens
     num_return_sequences=1,
     no_repeat_ngram_size=2,  # Example parameter to control generation
     pad_token_id=tokenizer.pad_token_id,  # Use the specified pad token ID
