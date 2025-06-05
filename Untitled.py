@@ -7,25 +7,83 @@
 import torch  # transformers relies on a backend framework like torch
 
 # Import the necessary classes from the transformers library
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    GenerationMixin,
+    PretrainedConfig,
+    PreTrainedModel,
+)
 
 # 1. Choose a small pre-trained model
 # 'gpt2' is a good small model for demonstration purposes.
 # Other small options could be 'gpt2-medium', 'distilgpt2', 'sshleifer/tiny-gpt2', etc.
 # model_name = "gpt2"
-model_name = "Qwen/Qwen3-0.6B"
+model_name = "Qwen/Qwen3-0.6B"  # This will be the actual model loaded by ProxyModel
 
-print(f"Loading tokenizer and model for '{model_name}'...")
 
+# --- ProxyModel Definition ---
+class ProxyModel(GenerationMixin):
+    def __init__(self, actual_model_name_or_path):
+        # First, load the configuration of the actual model
+        # config = PretrainedConfig.from_pretrained(actual_model_name_or_path, **kwargs)
+
+        # Initialize the PreTrainedModel (parent class) with this configuration
+        # This MUST be called before assigning any nn.Module attributes (like self.real_model)
+        # super().__init__(config)
+
+        # Now, load the actual model
+        # We can pass the config we already loaded to potentially speed things up or ensure consistency
+        self.real_model = AutoModelForCausalLM.from_pretrained(
+            actual_model_name_or_path
+        )
+        # TODO: get access to this without loading weights of the actual model
+        self.generation_config = self.real_model.generation_config
+        self.generation_config.disable_compile = True
+        self.config = self.real_model.config
+        self.main_input_name = self.real_model.main_input_name
+        self._supports_cache_class = self.real_model._supports_cache_class
+        self.device = self.real_model.device
+        # Ensure the ProxyModel itself knows its main input name, typically from the real model's config or the model itself
+        # PreTrainedModel's __init__ might set this from config, but good to be explicit if needed.
+        # If real_model has main_input_name, it's more direct.
+
+    def can_generate(self):
+        return True
+
+    def forward(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
+        # Delegate the forward pass to the real model
+        # Pass through all relevant arguments
+        return self.real_model.forward(
+            input_ids=input_ids, attention_mask=attention_mask, labels=labels, **kwargs
+        )
+
+    def __call__(self, input_ids=None, attention_mask=None, labels=None, **kwargs):
+        # Delegate the forward pass to the real model
+        # Pass through all relevant arguments
+        return self.real_model.forward(
+            input_ids=input_ids, attention_mask=attention_mask, labels=labels, **kwargs
+        )
+
+    # The .generate() method is inherited from PreTrainedModel (via GenerationMixin)
+    # and will use the above `forward` method.
+
+
+# --- End ProxyModel Definition ---
+
+print(f"Loading tokenizer for '{model_name}'...")
 # 2. Load the tokenizer
 # The tokenizer is responsible for converting text into token IDs that the model understands.
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_name
+)  # Tokenizer corresponds to the actual model
 
-# 3. Load the model
-# AutoModelForCausalLM is suitable for text generation tasks.
-model = AutoModelForCausalLM.from_pretrained(model_name)
+print(f"Instantiating ProxyModel with actual model '{model_name}'...")
+# 3. Load the model (using ProxyModel)
+# The ProxyModel will internally load AutoModelForCausalLM.from_pretrained(model_name)
+model = ProxyModel(actual_model_name_or_path=model_name)
 
-print("Model loaded successfully.")
+print("ProxyModel instantiated successfully, real model loaded internally.")
 
 
 # --- Template Formatting ---
