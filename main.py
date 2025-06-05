@@ -31,41 +31,41 @@ print("ProxyModel instantiated successfully, real model loaded internally.")
 
 
 # --- Template Formatting ---
-def apply_prompt_template(
-    prompt, model_name, system_prompt="You are a helpful assistant."
-):
-    """Applies a model-specific template to the prompt, including a system prompt."""
-    if "Qwen" in model_name:  # Example for Qwen models
-        # Qwen models often use a specific chat format.
-        # Refer to official Qwen documentation for precise formatting.
-        # Example: <|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n
-        formatted_prompt = (
-            f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
-            f"<|im_start|>user\n{prompt}<|im_end|>\n"
-            f"<|im_start|>assistant\n"
-        )
-    elif "gpt2" in model_name:  # Example for GPT-2
-        # GPT-2 doesn't have a strict template, but you can prepend system and user roles.
-        formatted_prompt = f"System: {system_prompt}\nUser: {prompt}\nAssistant:"
-    elif "Llama" in model_name:  # Example for Llama models (conceptual)
-        # Llama models (like Llama-2-chat, Llama-3-instruct) have specific chat templates.
-        # Example for Llama-2-chat / Llama-3-instruct:
-        # <s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{user_message} [/INST]
-        # Note: Llama-3 uses a different template structure, often with <|begin_of_text|>, <|start_header_id|>, etc.
-        # This is a simplified Llama-2 style example.
-        formatted_prompt = (
-            f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"
-        )
-    else:
-        # Default: no specific template, use prompt as is, optionally prepend system prompt if provided
-        print(
-            f"Warning: No specific template found for model '{model_name}'. Using raw prompt with optional system prompt."
-        )
-        if system_prompt:
-            formatted_prompt = f"System: {system_prompt}\nUser: {prompt}"
-        else:
-            formatted_prompt = prompt
-    return formatted_prompt
+# def apply_prompt_template(
+#     prompt, model_name, system_prompt="You are a helpful assistant."
+# ):
+#     """Applies a model-specific template to the prompt, including a system prompt."""
+#     if "Qwen" in model_name:  # Example for Qwen models
+#         # Qwen models often use a specific chat format.
+#         # Refer to official Qwen documentation for precise formatting.
+#         # Example: <|im_start|>system\n{system_prompt}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n
+#         formatted_prompt = (
+#             f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
+#             f"<|im_start|>user\n{prompt}<|im_end|>\n"
+#             f"<|im_start|>assistant\n"
+#         )
+#     elif "gpt2" in model_name:  # Example for GPT-2
+#         # GPT-2 doesn't have a strict template, but you can prepend system and user roles.
+#         formatted_prompt = f"System: {system_prompt}\nUser: {prompt}\nAssistant:"
+#     elif "Llama" in model_name:  # Example for Llama models (conceptual)
+#         # Llama models (like Llama-2-chat, Llama-3-instruct) have specific chat templates.
+#         # Example for Llama-2-chat / Llama-3-instruct:
+#         # <s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{user_message} [/INST]
+#         # Note: Llama-3 uses a different template structure, often with <|begin_of_text|>, <|start_header_id|>, etc.
+#         # This is a simplified Llama-2 style example.
+#         formatted_prompt = (
+#             f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"
+#         )
+#     else:
+#         # Default: no specific template, use prompt as is, optionally prepend system prompt if provided
+#         print(
+#             f"Warning: No specific template found for model '{model_name}'. Using raw prompt with optional system prompt."
+#         )
+#         if system_prompt:
+#             formatted_prompt = f"System: {system_prompt}\nUser: {prompt}"
+#         else:
+#             formatted_prompt = prompt
+#     return formatted_prompt
 
 
 # --- End Template Formatting ---
@@ -127,21 +127,3 @@ generated_text = tokenizer.decode(output_sequences[0], skip_special_tokens=False
 print("\n--- Generated Text ---")
 print(generated_text)
 print("--------------------")
-
-
-# In[2]:
-
-
-# type(model)
-
-
-# In[3]:
-
-
-# model
-
-
-# In[9]:
-
-
-# get_ipython().run_line_magic('pinfo', 'model.generate')
